@@ -1,0 +1,129 @@
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - biblioteca-net
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8080:8080"
+    networks:
+      - biblioteca-net
+
+  ms-usuarios:
+    build: ./ms-usuarios
+    container_name: ms-usuarios
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/bd_usuarios
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+    depends_on:
+      - mysql-db
+      - eureka-server
+    networks:
+      - biblioteca-net
+
+  ms-libros:
+    build: ./ms-libros
+    container_name: ms-libros
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/bd_libros
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+    depends_on:
+      - mysql-db
+      - eureka-server
+    networks:
+      - biblioteca-net
+
+  ms-ordenes:
+    build: ./ms-ordenes
+    container_name: ms-ordenes
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/bd_ordenes
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+    depends_on:
+      - mysql-db
+      - eureka-server
+      - ms-libros
+      - ms-prestamos
+      - ms-pagos
+    networks:
+      - biblioteca-net
+
+  ms-prestamos:
+    build: ./ms-prestamos
+    container_name: ms-prestamos
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/bd_prestamos
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+    depends_on:
+      - mysql-db
+      - eureka-server
+      - ms-libros
+    networks:
+      - biblioteca-net
+
+  ms-pagos:
+    build: ./ms-pagos
+    container_name: ms-pagos
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/bd_pagos
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+    depends_on:
+      - mysql-db
+      - eureka-server
+    networks:
+      - biblioteca-net
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8080/eureka/
+      JWT_SECRET: mi_clave_super_segura_para_firmar_tokens_2026
+    depends_on:
+      - eureka-server
+      - ms-usuarios
+      - ms-libros
+      - ms-ordenes
+      - ms-prestamos
+      - ms-pagos
+    networks:
+      - biblioteca-net
+
+volumes:
+  mysql_data:
+
+networks:
+  biblioteca-net:
