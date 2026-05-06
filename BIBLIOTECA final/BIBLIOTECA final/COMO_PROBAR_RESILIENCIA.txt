@@ -1,0 +1,74 @@
+CAMBIOS APLICADOS - RESILIENCIA
+
+1) ms-ordenes
+   - Se agregaron clientes resilientes:
+     * Client/PagosClient.java
+     * Client/LibrosClient.java
+     * Client/PrestamosClient.java
+   - Se agregó @CircuitBreaker + @Retry para llamadas a ms-pagos, ms-libros y ms-prestamos.
+   - Se corrigió RestTemplate con @LoadBalanced para que funcionen URLs como http://ms-pagos y http://ms-libros.
+   - Se corrigió la ruta incorrecta reducir-stock// por reducir-stock/.
+   - Se corrigió PrestamoRequest para usar LocalDate, compatible con ms-prestamos.
+   - Se evita doble descuento de stock en ALQUILER: ms-ordenes delega el stock a ms-prestamos.
+   - Si un servicio externo falla, la orden queda en estado FALLIDA con mensaje controlado.
+
+2) ms-prestamos
+   - Se agregó Client/LibrosClient.java con @CircuitBreaker + @Retry.
+   - Se corrigió RestTemplate con @LoadBalanced y timeouts.
+   - Al devolver un libro ya devuelto, responde: Libro ya devuelto.
+
+3) Dependencias agregadas en ms-ordenes y ms-prestamos
+   - spring-boot-starter-aop
+   - spring-boot-starter-actuator
+   - resilience4j-spring-boot4:2.4.0
+
+COMANDOS PARA EJECUTAR
+
+Desde la carpeta BIBLIOTECA:
+
+docker compose down -v
+docker compose build --no-cache
+docker compose up
+
+PRUEBA RAPIDA
+
+1) Crear un libro:
+POST http://localhost:8090/libros
+{
+  "titulo": "Java Microservicios",
+  "autor": "Juan",
+  "isbn": "ISBN-001",
+  "precio": 50.00,
+  "stock": 5
+}
+
+2) Crear una orden de COMPRA:
+POST http://localhost:8090/ordenes
+{
+  "usuarioId": 1,
+  "tipoOrden": "COMPRA",
+  "detalles": [
+    {
+      "libroId": 1,
+      "cantidad": 1,
+      "precioUnitario": 50.00
+    }
+  ]
+}
+
+3) Probar resiliencia:
+   - Detén ms-pagos o ms-libros.
+   - Vuelve a crear la orden.
+   - Debe responder con mensaje controlado y la orden debe quedar FALLIDA.
+
+ENDPOINTS ACTUATOR
+
+ms-ordenes:
+http://localhost:8083/actuator/health
+http://localhost:8083/actuator/circuitbreakers
+http://localhost:8083/actuator/retries
+
+ms-prestamos:
+http://localhost:8084/actuator/health
+http://localhost:8084/actuator/circuitbreakers
+http://localhost:8084/actuator/retries

@@ -1,0 +1,43 @@
+SOLUCION AL ERROR: lstat /target: no such file or directory
+
+El error salia porque los Dockerfile antiguos tenian:
+
+COPY target/*.jar app.jar
+
+Eso obliga a que primero exista la carpeta target con el .jar generado.
+Si no ejecutas mvn clean package antes en cada microservicio, Docker falla.
+
+En esta version ya se corrigio: cada Dockerfile compila su propio microservicio dentro de Docker usando Maven.
+
+COMANDOS PARA CORRER:
+
+1) Entra a la carpeta principal donde esta Docker-compose.yml:
+
+cd "C:\Users\hp\Documents\Juan-CICLO-V\BIBLIOTECA res\BIBLIOTECA"
+
+2) Limpia contenedores y volumenes:
+
+docker compose down -v
+
+3) Construye desde cero:
+
+docker compose build --no-cache
+
+4) Levanta todo:
+
+docker compose up
+
+IMPORTANTE:
+- Ya no necesitas ejecutar mvn clean package manualmente antes.
+- El primer build puede demorar porque Docker descargara Maven y dependencias.
+- Si sale error de conexion a MySQL al inicio, espera unos segundos y vuelve a ejecutar:
+  docker compose up
+
+PUERTOS:
+- Eureka: http://localhost:8080
+- Gateway: http://localhost:8090
+- Usuarios: http://localhost:8081
+- Libros: http://localhost:8082
+- Ordenes: http://localhost:8083
+- Prestamos: http://localhost:8084
+- Pagos: http://localhost:8085
